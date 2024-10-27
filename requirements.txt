@@ -1,0 +1,4 @@
+diffusers[torch]
+transformers[torch]
+fastapi
+uvicorn
