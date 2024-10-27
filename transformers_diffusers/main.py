@@ -13,6 +13,7 @@ import logging
 import sys
 import os
 import argparse
+import requests
 
 pipeline = None
 
@@ -25,37 +26,56 @@ class InferenceRequest(BaseModel):
     parameters: Optional[Dict[str, Any]] = None
 
 
-# Function to load the model asynchronously
-async def load_model():
+# Function to get model metadata from Hugging Face
+def get_model_metadata(model_id: str) -> Dict[str, Any]:
+    url = f"https://huggingface.co/api/models/{model_id}"
+    headers = {}
+    if HF_API_TOKEN:
+        headers["Authorization"] = f"Bearer {HF_API_TOKEN}"
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError(f"Failed to fetch model metadata for {model_id}")
+    return response.json()
+
+# Function to load the model synchronously
+def load_model():
     global pipeline
-    if not MODEL_ID or not FRAMEWORK:
-        raise ValueError("MODEL_ID and FRAMEWORK must be defined in environment variables")
+    if not MODEL_ID:
+        raise ValueError("MODEL_ID must be defined in environment variables or arguments")
     
-    if FRAMEWORK.lower() == "transformers":
+    logger.info("Starting model loading process...")
+
+    # Fetch model metadata
+    metadata = get_model_metadata(MODEL_ID)
+    logger.info("Fetched model metadata (20%)")
+    tags = metadata.get("tags", [])
+    
+    # Determine framework from tags
+    if "transformers" in tags:
+        framework = "transformers"
+    elif "diffusers" in tags:
+        framework = "diffusers"
+    else:
+        raise ValueError(f"Framework not found in model tags for {MODEL_ID}")
+
+    logger.info(f"Determined framework: {framework} (40%)")
+
+    if framework == "transformers":
         try:
-            pipeline = transformers_pipeline(model=MODEL_ID, device_map=device)
-            logger.info(f"Model {MODEL_ID} loaded successfully using {FRAMEWORK} framework")
+            pipeline = transformers_pipeline(model=MODEL_ID, device_map=device, use_auth_token=HF_API_TOKEN)
+            logger.info(f"Model {MODEL_ID} loaded successfully using {framework} framework (100%)")
         except Exception as e:
             logger.error(f"Error loading transformers model: {e}")
             raise
-    elif FRAMEWORK.lower() == "diffusers":
+    elif framework == "diffusers":
         try:
-            pipeline = diffusers_pipeline.from_pretrained(MODEL_ID, device_map=device)
-            logger.info(f"Model {MODEL_ID} loaded successfully using {FRAMEWORK} framework")
+            pipeline = diffusers_pipeline.from_pretrained(MODEL_ID, device_map=device, use_auth_token=HF_API_TOKEN)
+            logger.info(f"Model {MODEL_ID} loaded successfully using {framework} framework (100%)")
         except Exception as e:
             logger.error(f"Error loading diffusers model: {e}")
             raise
     else:
-        raise ValueError(f"Invalid framework: {FRAMEWORK}")
-
-# Define a lifespan context manager
-async def lifespan(app: FastAPI):
-    logger.info(f"Starting to load model {MODEL_ID} with framework {FRAMEWORK}")
-    background_tasks = BackgroundTasks()
-    background_tasks.add_task(load_model)
-    await background_tasks()
-    yield
-    # Any cleanup code can go here
+        raise ValueError(f"Invalid framework: {framework}")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -80,10 +100,9 @@ args = parse_arguments()
 
 # Retrieving model and framework from arguments or environment variables
 MODEL_ID = args.model_id or os.getenv("MODEL_ID")
-FRAMEWORK = args.framework or os.getenv("FRAMEWORK")
+HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 
-# Ensure the lifespan function is defined before this line
-app = FastAPI(title="api", lifespan=lifespan)
+app = FastAPI(title="api")
 
 @app.get("/health")
 def health():
@@ -105,4 +124,6 @@ def infer(request: InferenceRequest):
 
 
 if __name__ == "__main__":
+    # Load the model before starting the server
+    load_model()
     uvicorn.run(app, host="0.0.0.0", port=4321)

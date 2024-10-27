@@ -1,25 +1,21 @@
 #!/bin/bash
 
 # Initialize variables
-MODEL_URL=$MODEL_URL
-MODEL_NAME=${MODEL_NAME:-$(basename "$MODEL_URL")}
+MODEL_ID=$MODEL_ID
+MODEL_NAME=$MODEL_NAME
 MODEL_PATH=${MODEL_PATH:-/home/model-server}
-MODEL_PROTOCOL=${MODEL_PROTOCOL:-https}
 AWS_REGION=$AWS_REGION
 AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-SERVE=${SERVE:-false}
 
 parse_arguments()
 {
     # Parse arguments
     while [[ "$#" -gt 0 ]]; do
         case $1 in
-            --model-url) MODEL_URL="$2"; MODEL_NAME=${MODEL_NAME:-$(basename "$2")}; shift 2 ;;
-            --serve) SERVE="true"; shift ;;
+            --model-id) MODEL_ID="$2"; shift 2 ;;
             --model-path) MODEL_PATH="$2"; shift 2 ;;
             --model-name) MODEL_NAME="$2"; shift 2 ;;
-            --model-protocol) MODEL_PROTOCOL="$2"; shift 2 ;;
             --aws-region) AWS_REGION="$2"; shift 2 ;;
             --aws-access-key-id) AWS_ACCESS_KEY_ID="$2"; shift 2 ;;
             --aws-secret-access-key) AWS_SECRET_ACCESS_KEY="$2"; shift 2 ;;
@@ -27,9 +23,26 @@ parse_arguments()
         esac
     done
 
-    # Check if model_url argument is provided
-    if [ -z "$MODEL_URL" ]; then
-        echo "Usage: $0 --model-url <model_url> [--model-name <model_name>] [--aws-region <aws_region>] [--aws-access-key-id <aws_access_key_id>] [--aws-secret-access-key <aws_secret_access_key>]"
+    # Check if model_id argument is provided
+    if [ -z "$MODEL_ID" ]; then
+        echo "Usage: $0 --model-id <model_id> [--model-name <model_name>] [--aws-region <aws_region>] [--aws-access-key-id <aws_access_key_id>] [--aws-secret-access-key <aws_secret_access_key>]"
+        exit 1
+    fi
+
+    # If model name is not provided, use the basename of the model ID
+    MODEL_NAME=${MODEL_NAME:-$(basename "$MODEL_ID")}
+}
+
+# Determine MODEL_PROTOCOL based on MODEL_ID
+determine_model_protocol() {
+    if [[ "${MODEL_ID}" == https://* ]]; then
+        MODEL_PROTOCOL="https"
+    elif [[ "${MODEL_ID}" == http://* ]]; then
+        MODEL_PROTOCOL="http"
+    elif [[ "${MODEL_ID}" == s3://* ]]; then
+        MODEL_PROTOCOL="s3"
+    else
+        echo "Unsupported MODEL_ID format. Please use a valid URL."
         exit 1
     fi
 }
@@ -37,8 +50,8 @@ parse_arguments()
 download_http()
 {
     if [ ! -f "$MODEL_PATH/model-store/$MODEL_NAME" ]; then
-        echo "Downloading model from $MODEL_URL to $MODEL_PATH/model-store/$MODEL_NAME"
-        curl -L -o "$MODEL_PATH/model-store/$MODEL_NAME" "$MODEL_URL"
+        echo "Downloading model from $MODEL_ID to $MODEL_PATH/model-store/$MODEL_NAME"
+        curl -L -o "$MODEL_PATH/model-store/$MODEL_NAME" "$MODEL_ID"
     else
         echo "File $MODEL_PATH/model-store/$MODEL_NAME already exists. Skipping download."
     fi
@@ -46,8 +59,8 @@ download_http()
 
 download_s3()
 {
-    echo "Downloading model from $MODEL_URL to $MODEL_PATH/model-store/$MODEL_NAME"
-    if ! AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY aws s3 cp "$MODEL_URL" "$MODEL_PATH/model-store/$MODEL_NAME" \
+    echo "Downloading model from $MODEL_ID to $MODEL_PATH/model-store/$MODEL_NAME"
+    if ! AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY aws s3 cp "$MODEL_ID" "$MODEL_PATH/model-store/$MODEL_NAME" \
         --region "$AWS_REGION"; then
         echo "Failed to download model from S3. Exiting."
         exit 1
@@ -57,6 +70,7 @@ download_s3()
 download_model()
 {
     mkdir -p "$MODEL_PATH/model-store"
+    determine_model_protocol
     if [ "$MODEL_PROTOCOL" == "https" ]; then
         download_http
     elif [ "$MODEL_PROTOCOL" == "http" ]; then
@@ -90,10 +104,7 @@ function start_torchserve()
 }
 
 parse_arguments "$@"
+determine_model_protocol
 download_model
 generate_config_properties
-
-if [ "$SERVE" == "true" ]; then
-    start_torchserve
-fi
-
+start_torchserve
