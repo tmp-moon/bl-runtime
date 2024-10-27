@@ -4,7 +4,7 @@ TAG=latest
 
 call:
 	curl -X POST \
-		http://localhost:4321/ \
+		http://localhost:80/ \
 		-H "Content-Type: application/json" \
 		-d '{"inputs": "My name is Sarah and I live in London"}'
 
@@ -20,6 +20,6 @@ run:
 		--rm \
 		--platform linux/amd64 \
 		--name blruntime \
-		-p 4321:4321 \
+		-p 80:80 \
 		${DOCKER_IMAGE}:${TAG} \
 		--model-id $(MODEL_ID)

@@ -17,7 +17,7 @@ run:
 	docker run \
 		--rm \
 		--name torchserve \
-		-p 8080:8080 \
+		-p 80:80 \
 		-p 8081:8081 \
 		${DOCKER_IMAGE} \
 		--model-id ${MODEL_ID} \
@@ -26,8 +26,8 @@ run:
 		--aws-secret-access-key ${AWS_SECRET_ACCESS_KEY}
 
 test:
-	curl http://127.0.0.1:8080/predictions/densenet161 -T samples/shadow.jpg
-	curl http://127.0.0.1:8080/predictions/densenet161 -T samples/pixel.jpg
+	curl http://127.0.0.1:80/predictions/densenet161 -T samples/shadow.jpg
+	curl http://127.0.0.1:80/predictions/densenet161 -T samples/pixel.jpg
 
 test-prod:
 	curl --request POST \

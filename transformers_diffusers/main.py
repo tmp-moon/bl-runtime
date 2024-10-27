@@ -126,4 +126,4 @@ def infer(request: InferenceRequest):
 if __name__ == "__main__":
     # Load the model before starting the server
     load_model()
-    uvicorn.run(app, host="0.0.0.0", port=4321)
+    uvicorn.run(app, host="0.0.0.0", port=80)
