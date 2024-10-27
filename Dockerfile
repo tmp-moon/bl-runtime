@@ -1,8 +1,6 @@
-FROM python:3.12-slim
+FROM python:3.12
 
-COPY requirements.txt requirements.txt
-
-RUN pip install -r requirements.txt
+RUN pip install diffusers transformers fastapi uvicorn
 
 COPY main.py main.py
 
