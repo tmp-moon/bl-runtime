@@ -2,6 +2,7 @@ from typing import Dict, Union, Any, Optional, List
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException
+from fastapi import BackgroundTasks
 from pydantic import BaseModel
 from transformers import pipeline as transformers_pipeline
 from diffusers import DiffusionPipeline as diffusers_pipeline
@@ -24,7 +25,37 @@ class InferenceRequest(BaseModel):
     parameters: Optional[Dict[str, Any]] = None
 
 
-app = FastAPI(title="api")
+# Function to load the model asynchronously
+async def load_model():
+    global pipeline
+    if not MODEL_ID or not FRAMEWORK:
+        raise ValueError("MODEL_ID and FRAMEWORK must be defined in environment variables")
+    
+    if FRAMEWORK.lower() == "transformers":
+        try:
+            pipeline = transformers_pipeline(model=MODEL_ID, device_map=device)
+            logger.info(f"Model {MODEL_ID} loaded successfully using {FRAMEWORK} framework")
+        except Exception as e:
+            logger.error(f"Error loading transformers model: {e}")
+            raise
+    elif FRAMEWORK.lower() == "diffusers":
+        try:
+            pipeline = diffusers_pipeline.from_pretrained(MODEL_ID, device_map=device)
+            logger.info(f"Model {MODEL_ID} loaded successfully using {FRAMEWORK} framework")
+        except Exception as e:
+            logger.error(f"Error loading diffusers model: {e}")
+            raise
+    else:
+        raise ValueError(f"Invalid framework: {FRAMEWORK}")
+
+# Define a lifespan context manager
+async def lifespan(app: FastAPI):
+    logger.info(f"Starting to load model {MODEL_ID} with framework {FRAMEWORK}")
+    background_tasks = BackgroundTasks()
+    background_tasks.add_task(load_model)
+    await background_tasks()
+    yield
+    # Any cleanup code can go here
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -51,34 +82,8 @@ args = parse_arguments()
 MODEL_ID = args.model_id or os.getenv("MODEL_ID")
 FRAMEWORK = args.framework or os.getenv("FRAMEWORK")
 
-# Function to load the model
-def load_model():
-    global pipeline
-    if not MODEL_ID or not FRAMEWORK:
-        raise ValueError("MODEL_ID and FRAMEWORK must be defined in environment variables")
-    
-    if FRAMEWORK.lower() == "transformers":
-        try:
-            pipeline = transformers_pipeline(model=MODEL_ID, device_map=device)
-        except Exception as e:
-            logger.error(f"Error loading transformers model: {e}")
-            raise
-    elif FRAMEWORK.lower() == "diffusers":
-        try:
-            pipeline = diffusers_pipeline.from_pretrained(MODEL_ID, device_map=device)
-        except Exception as e:
-            logger.error(f"Error loading diffusers model: {e}")
-            raise
-    else:
-        raise ValueError(f"Invalid framework: {FRAMEWORK}")
-
-# Loading the model at startup
-try:
-    load_model()
-    logger.info(f"Model {MODEL_ID} loaded successfully using {FRAMEWORK} framework")
-except Exception as e:
-    logger.error(f"Failed to load model: {e}")
-    sys.exit(1)
+# Ensure the lifespan function is defined before this line
+app = FastAPI(title="api", lifespan=lifespan)
 
 @app.get("/health")
 def health():
