@@ -2,7 +2,7 @@
 
 # Initialize variables
 MODEL_URL=$MODEL_URL
-MODEL_NAME=${MODEL_NAME:-model.mar}
+MODEL_NAME=${MODEL_NAME:-$(basename "$MODEL_URL")}
 MODEL_PATH=${MODEL_PATH:-/home/model-server}
 MODEL_PROTOCOL=${MODEL_PROTOCOL:-https}
 AWS_REGION=$AWS_REGION
@@ -10,13 +10,12 @@ AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 SERVE=${SERVE:-false}
 
-
 parse_arguments()
 {
     # Parse arguments
     while [[ "$#" -gt 0 ]]; do
         case $1 in
-            --model-url) MODEL_URL="$2"; shift 2 ;;
+            --model-url) MODEL_URL="$2"; MODEL_NAME=${MODEL_NAME:-$(basename "$2")}; shift 2 ;;
             --serve) SERVE="true"; shift ;;
             --model-path) MODEL_PATH="$2"; shift 2 ;;
             --model-name) MODEL_NAME="$2"; shift 2 ;;
