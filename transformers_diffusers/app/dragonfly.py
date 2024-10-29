@@ -2,10 +2,13 @@ import requests
 from requests.adapters import HTTPAdapter
 from typing import Optional
 
-DRAGONFLY_URL: Optional[str] = None
+DRAGONFLY_URL: Optional[str] = (
+    "http://dragonfly-seed-client.dragonfly-system.svc.cluster.local:4001"
+)
 
 
 def set_dragonfly_url(url: str):
+    """Set the Dragonfly URL."""
     global DRAGONFLY_URL
     DRAGONFLY_URL = url
 
@@ -30,11 +33,12 @@ class DragonflyAdapter(HTTPAdapter):
 # Create a factory function that returns a new Session.
 def backend_factory() -> requests.Session:
     session = requests.Session()
-    session.mount("http://", DragonflyAdapter())
-    session.mount("https://", DragonflyAdapter())
-    session.proxies = {
-        "https": DRAGONFLY_URL,
-        "http": DRAGONFLY_URL,
-    }
-    session.verify = False
+    if DRAGONFLY_URL is not None:
+        session.mount("http://", DragonflyAdapter())
+        session.mount("https://", DragonflyAdapter())
+        session.proxies = {
+            "https": DRAGONFLY_URL,
+            "http": DRAGONFLY_URL,
+        }
+        session.verify = False
     return session

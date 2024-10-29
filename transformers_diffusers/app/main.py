@@ -25,6 +25,7 @@ if __name__ == "__main__":
         )
     HF_API_TOKEN: Optional[str] = os.getenv("HF_API_TOKEN")
     DRAGONFLY_URL: Optional[str] = os.getenv("DRAGONFLY_URL")
+    DEACTIVATE_DRAGONFLY: Optional[bool] = os.getenv("DEACTIVATE_DRAGONFLY")
 
     logger = logging.getLogger(__name__)
     stream_handler = logging.StreamHandler(sys.stdout)
@@ -32,6 +33,7 @@ if __name__ == "__main__":
 
     if DRAGONFLY_URL:
         set_dragonfly_url(DRAGONFLY_URL)
+    if DEACTIVATE_DRAGONFLY is None:
         configure_http_backend(backend_factory=backend_factory)
 
     try:
