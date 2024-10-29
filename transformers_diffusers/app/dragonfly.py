@@ -18,7 +18,12 @@ class DragonflyAdapter(HTTPAdapter):
         proxies: Optional[dict],
         cert: Optional[str],
     ) -> requests.Session:
-        if "repos" in request.url:  ## Depends on the config of the dragonfly server
+        print(request.url)
+        if (
+            request.url.startswith("https://cdn-lfs.hf.co")
+            or request.url.startswith("https://cdn-lfs-eu-1.hf.co")
+            or request.url.startswith("https://cdn-lfs-us-1.hf.co")
+        ):
             request.url = request.url.replace("https://", "http://")
         return super().get_connection_with_tls_context(request, verify, proxies, cert)
 
