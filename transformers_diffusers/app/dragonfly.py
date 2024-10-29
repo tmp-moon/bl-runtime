@@ -18,7 +18,6 @@ class DragonflyAdapter(HTTPAdapter):
         proxies: Optional[dict],
         cert: Optional[str],
     ) -> requests.Session:
-        print(request.url)
         if (
             request.url.startswith("https://cdn-lfs.hf.co")
             or request.url.startswith("https://cdn-lfs-eu-1.hf.co")
