@@ -19,7 +19,7 @@ jobs:
       matrix:
         runtime:
           - torch
-          - transformers_diffusers
+          - transformers-diffusers
     steps:
       - name: Checkout
         uses: actions/checkout@v3
