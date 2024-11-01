@@ -1,4 +1,4 @@
-name: Tools
+name: Release
 
 on:
   push:
@@ -10,8 +10,8 @@ permissions:
   packages: write
 
 jobs:
-  build-tool:
-    name: build
+  build-runtime:
+    name: build-runtime
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
