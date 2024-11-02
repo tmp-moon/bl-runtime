@@ -7,6 +7,7 @@ MODEL_PATH=${MODEL_PATH:-/home/model-server}
 AWS_REGION=$AWS_REGION
 AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+OAUTH_TOKEN_URL=https://api.beamlit.dev/v0/oauth/token
 
 parse_arguments()
 {
@@ -51,7 +52,26 @@ download_http()
 {
     if [ ! -f "$MODEL_PATH/model-store/$MODEL_NAME" ]; then
         echo "Downloading model from $MODEL_ID to $MODEL_PATH/model-store/$MODEL_NAME"
-        curl -L -o "$MODEL_PATH/model-store/$MODEL_NAME" "$MODEL_ID"
+
+        if [ ! -z "$BL_CLIENT_CREDENTIALS" ]; then
+            echo "Getting OAuth token..."
+            RESPONSE=$(curl -s -X POST \
+                -H "Authorization: Basic $BL_CLIENT_CREDENTIALS" \
+                -H "Content-Type: application/x-www-form-urlencoded" \
+                "$OAUTH_TOKEN_URL" \
+                -d "grant_type=client_credentials")
+            ACCESS_TOKEN=$(echo $RESPONSE | grep -o '"access_token":"[^"]*' | cut -d'"' -f4)
+            
+            if [ -z "$ACCESS_TOKEN" ]; then
+                echo "Failed to get access token"
+                exit 1
+            fi
+        fi
+
+        curl -L -o "$MODEL_PATH/model-store/$MODEL_NAME" "$MODEL_ID" \
+            -H "X-Beamlit-Authorization: Bearer $ACCESS_TOKEN"
+        cat "$MODEL_PATH/model-store/$MODEL_NAME"
+        echo ""
     else
         echo "File $MODEL_PATH/model-store/$MODEL_NAME already exists. Skipping download."
     fi

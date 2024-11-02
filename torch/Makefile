@@ -5,6 +5,9 @@ AWS_REGION=$(shell aws configure get region)
 AWS_ACCESS_KEY_ID=$(shell aws configure get aws_access_key_id)
 AWS_SECRET_ACCESS_KEY=$(shell aws configure get aws_secret_access_key)
 PROD_TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6ImJlYW1saXQiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOlsiYmVhbWxpdCJdLCJlbWFpbCI6ImRyYXBwaWVyLmNoYXJsZXNAZ21haWwuY29tIiwiZXhwIjoxNzMwMDE2MjE4LCJmYW1pbHlfbmFtZSI6IkRyYXBwaWVyIiwiZ2l2ZW5fbmFtZSI6IkNoYXJsZXMiLCJpYXQiOjE3MzAwMDkwMTgsImlzcyI6Imh0dHBzOi8vYXBpLmJlYW1saXQuZGV2L3YwIiwianRpIjoiWTFTUjFKT1FPRTNRMlVUUyIsIm5iZiI6MTczMDAwOTAxOCwic2NvcGUiOiJvZmZsaW5lX2FjY2VzcyIsInN1YiI6IjZhMmE4NDUwLTZhZGItNGViYi04M2UxLTFiN2U1YjgyMzE5MCIsInN1Yl90eXBlIjoidXNlciJ9.an4QtIHE7FXK393252LxChIxmGlSF7iT_c0abCF1ecxcDQseNX2kj1VELh6KeBhUrtYKXohNcBP7tZewvdH2kP78S5N4sOXp2daD-ug8icduwcr_i8YfDUd_ceSunrDn86yPLnkmOSY464CvE3Lo8IU11GDJjUhCrJtzUKXMncmGJ4LVGyeSN4KSEECA0bmHd79i1s1zsep9NmB-1xMnndo1Rs33i45QLf-GNW6MYCdeulMgdVbPYQoyjqD6ebch0JyLdK1YyRMsMmrw9ZjQtYg3bNgvNvWxP2xkS1LPq86VhV6AFmfgVNnSF6PhRjGp81tIuAUf0ksmtieoVRIt8xNcukDtyIz8T6yNWwnc9m3g_9GnOfKyyCkGIExdgbNMHOIuiGJkJj_HE9EGsNrUog7yA8Z_pcfkicIlU4QONnuWut27xmFWmoCLwj_DFxS1UbepdJwDDL77h8iUGB5YO_M1gMrEWyDNQN_T85JaikSr_9NCjry3dejXhSvcJr4WtJ2Njt1Epvd-7JoHCWJufCIi3BrhVJg-lNTZLyhhw4lolWTbtdsS33kKQIPi06rPrB6Qj7XrAZMtC2y0POTGopymhXcBsMA5fKuUD7-YEqMczwe4NfmYCYFD3PcIrthQ5TLAXxTllqvCNrzUYV0regzUQ4W0Z-vSJZHNIEZlBfc
+CLIENT_CREDENTIALS=Y2hhcmxvdTo3RlhONjg3V0xPT1pKUjAxTTlJVzZITE42Wk45WjZXVw==
+BASE_URL=https://d19v3p57latabq.cloudfront.net
+MODEL_ID=charlou/upload-16368c25-37e9-4060-8935-ae3928db79ba/densenet161.mar
 
 build:
 	docker build -t ${DOCKER_IMAGE} .
@@ -19,11 +22,9 @@ run:
 		--name torchserve \
 		-p 80:80 \
 		-p 8081:8081 \
+		-e BL_CLIENT_CREDENTIALS=${CLIENT_CREDENTIALS} \
 		${DOCKER_IMAGE} \
-		--model-id ${MODEL_ID} \
-		--aws-region ${AWS_REGION} \
-		--aws-access-key-id ${AWS_ACCESS_KEY_ID} \
-		--aws-secret-access-key ${AWS_SECRET_ACCESS_KEY}
+		--model-id ${BASE_URL}/${MODEL_ID}
 
 test:
 	curl http://127.0.0.1:80/predictions/densenet161 -T samples/shadow.jpg
