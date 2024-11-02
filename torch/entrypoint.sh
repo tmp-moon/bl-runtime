@@ -70,7 +70,7 @@ download_http()
 
         curl -L -o "$MODEL_PATH/model-store/$MODEL_NAME" "$MODEL_ID" \
             -H "X-Beamlit-Authorization: Bearer $ACCESS_TOKEN"
-        cat "$MODEL_PATH/model-store/$MODEL_NAME"
+        du -hs "$MODEL_PATH/model-store/$MODEL_NAME"
         echo ""
     else
         echo "File $MODEL_PATH/model-store/$MODEL_NAME already exists. Skipping download."
