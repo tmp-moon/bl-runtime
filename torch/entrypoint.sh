@@ -107,7 +107,7 @@ generate_config_properties()
 {
     echo "Generating config.properties file"
     cat <<EOL > "$MODEL_PATH/config.properties"
-inference_address=http://0.0.0.0:8080
+inference_address=http://0.0.0.0:80
 management_address=http://0.0.0.0:8081
 model_store=$MODEL_PATH/model-store
 load_models=${MODEL_NAME}

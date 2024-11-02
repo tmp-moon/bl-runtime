@@ -11,7 +11,7 @@ RUN apt-get update && \
 RUN mkdir -p /home/model-server/model-store
 RUN chown -R model-server:model-server /home/model-server
 
-USER model-server
+# USER model-server
 
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
