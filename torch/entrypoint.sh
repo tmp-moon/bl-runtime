@@ -107,8 +107,8 @@ generate_config_properties()
 {
     echo "Generating config.properties file"
     cat <<EOL > "$MODEL_PATH/config.properties"
-inference_address=http://127.0.0.1:80
-management_address=http://127.0.0.1:8081
+inference_address=http://0.0.0.0:8080
+management_address=http://0.0.0.0:8081
 model_store=$MODEL_PATH/model-store
 load_models=${MODEL_NAME}
 disable_token_authorization=true
